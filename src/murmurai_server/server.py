@@ -54,6 +54,18 @@ from murmurai_server.models import (  # noqa: E402
 )
 from murmurai_server.transcriber import TranscribeOptions, download_audio, transcribe  # noqa: E402
 
+# Allow-list of valid Whisper model names (prevents path traversal attacks)
+ALLOWED_MODELS = frozenset({
+    "tiny", "tiny.en",
+    "base", "base.en",
+    "small", "small.en",
+    "medium", "medium.en",
+    "large", "large-v1", "large-v2", "large-v3",
+    "large-v3-turbo",
+    "distil-large-v2", "distil-large-v3",
+    "deepdml/faster-whisper-large-v3-turbo-ct2",
+})
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -376,6 +388,13 @@ async def submit_transcript(
     )
     max_line_width_int: int | None = int(max_line_width) if max_line_width else None
     max_line_count_int: int | None = int(max_line_count) if max_line_count else None
+
+    # Validate model name against allow-list (prevents path traversal attacks)
+    if model and model not in ALLOWED_MODELS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid model: '{model}'. Allowed models: {', '.join(sorted(ALLOWED_MODELS))}",
+        )
 
     # Validate input
     if not file and not audio_url:

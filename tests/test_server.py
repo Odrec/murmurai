@@ -109,7 +109,10 @@ class TestTranscriptEndpoints:
         test_audio = tmp_path / "test.mp3"
         test_audio.touch()
 
-        with patch("murmurai_server.server.download_audio", new_callable=AsyncMock) as mock_dl:
+        with (
+            patch("murmurai_server.server.download_audio", new_callable=AsyncMock) as mock_dl,
+            patch("murmurai_server.server.process_transcription") as mock_process,
+        ):
             mock_dl.return_value = test_audio
 
             response = await async_client.post(
@@ -126,6 +129,11 @@ class TestTranscriptEndpoints:
             assert "id" in data
             assert data["status"] == "queued"
 
+            # Verify the correct model was passed to the background task
+            mock_process.assert_called_once()
+            call_kwargs = mock_process.call_args.kwargs
+            assert call_kwargs["options"].model == "base"
+
     @pytest.mark.asyncio
     async def test_submit_transcript_with_empty_model_uses_default(
         self, async_client: AsyncClient, auth_headers: dict, tmp_path: Path
@@ -134,7 +142,10 @@ class TestTranscriptEndpoints:
         test_audio = tmp_path / "test.mp3"
         test_audio.touch()
 
-        with patch("murmurai_server.server.download_audio", new_callable=AsyncMock) as mock_dl:
+        with (
+            patch("murmurai_server.server.download_audio", new_callable=AsyncMock) as mock_dl,
+            patch("murmurai_server.server.process_transcription") as mock_process,
+        ):
             mock_dl.return_value = test_audio
 
             response = await async_client.post(
@@ -150,6 +161,34 @@ class TestTranscriptEndpoints:
             data = response.json()
             assert "id" in data
             assert data["status"] == "queued"
+
+            # Verify model is None (will use server default)
+            mock_process.assert_called_once()
+            call_kwargs = mock_process.call_args.kwargs
+            assert call_kwargs["options"].model is None
+
+    @pytest.mark.asyncio
+    async def test_submit_transcript_with_invalid_model_rejected(
+        self, async_client: AsyncClient, auth_headers: dict, tmp_path: Path
+    ):
+        """Test POST /v1/transcript rejects invalid model names (path traversal prevention)."""
+        test_audio = tmp_path / "test.mp3"
+        test_audio.touch()
+
+        with patch("murmurai_server.server.download_audio", new_callable=AsyncMock) as mock_dl:
+            mock_dl.return_value = test_audio
+
+            response = await async_client.post(
+                "/v1/transcript",
+                headers=auth_headers,
+                data={
+                    "audio_url": "https://example.com/test.mp3",
+                    "model": "../../etc/passwd",
+                },
+            )
+
+            assert response.status_code == 400
+            assert "Invalid model" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_submit_transcript_no_audio(self, async_client: AsyncClient, auth_headers: dict):
