@@ -253,6 +253,15 @@ async def submit_transcript(
     audio_url: Annotated[
         str | None, Form(description="URL to download audio from", examples=[""])
     ] = None,
+    # Model selection (overrides server default)
+    model: Annotated[
+        str | None,
+        Form(
+            description="Whisper model to use (e.g., 'base', 'small', 'medium', 'large-v2', "
+            "'large-v3', 'large-v3-turbo'). Empty = server default.",
+            examples=[""],
+        ),
+    ] = None,
     # All optional parameters with defaults
     language_code: Annotated[
         str | None, Form(description="Language code (auto-detect if empty)", examples=[""])
@@ -347,6 +356,7 @@ async def submit_transcript(
     # Sanitize nullable string fields (convert empty strings to None)
     # This handles Swagger UI sending "" instead of omitting the field
     audio_url = audio_url if audio_url else None
+    model = model if model else None
     language_code = language_code if language_code else None
     initial_prompt = initial_prompt if initial_prompt else None
     hotwords = hotwords if hotwords else None
@@ -409,6 +419,7 @@ async def submit_transcript(
 
     # Build options (all params already have defaults from Form)
     options = TranscribeOptions(
+        model=model,
         language=language_code,
         task=task,
         speaker_labels=speaker_labels,
