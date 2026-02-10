@@ -55,16 +55,26 @@ from murmurai_server.models import (  # noqa: E402
 from murmurai_server.transcriber import TranscribeOptions, download_audio, transcribe  # noqa: E402
 
 # Allow-list of valid Whisper model names (prevents path traversal attacks)
-ALLOWED_MODELS = frozenset({
-    "tiny", "tiny.en",
-    "base", "base.en",
-    "small", "small.en",
-    "medium", "medium.en",
-    "large", "large-v1", "large-v2", "large-v3",
-    "large-v3-turbo",
-    "distil-large-v2", "distil-large-v3",
-    "deepdml/faster-whisper-large-v3-turbo-ct2",
-})
+ALLOWED_MODELS = frozenset(
+    {
+        "tiny",
+        "tiny.en",
+        "base",
+        "base.en",
+        "small",
+        "small.en",
+        "medium",
+        "medium.en",
+        "large",
+        "large-v1",
+        "large-v2",
+        "large-v3",
+        "large-v3-turbo",
+        "distil-large-v2",
+        "distil-large-v3",
+        "deepdml/faster-whisper-large-v3-turbo-ct2",
+    }
+)
 
 
 @asynccontextmanager
