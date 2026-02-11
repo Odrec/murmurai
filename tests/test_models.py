@@ -179,12 +179,13 @@ class TestTranscriptUtterance:
     def test_utterance_without_confidence(self):
         """Test utterance without confidence (no word-level data)."""
         utterance = TranscriptUtterance(
+            speaker="A",
             text="Hello World",
             start=0,
             end=1000,
         )
         assert utterance.confidence is None
-        assert utterance.speaker is None
+        assert utterance.speaker == "A"
 
     def test_utterance_without_speaker_and_confidence(self):
         """Test utterance with only required fields (no diarization, no word-level data)."""
